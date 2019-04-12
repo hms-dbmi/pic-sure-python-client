@@ -1,0 +1,52 @@
+version: '3.3'
+services:
+
+ copy-picsureauth-war:
+    image: picsureauth:latest
+    user: root
+    volumes:
+      - /usr/local/docker-config/wildfly/:/opt/local/docker-config/wildfly/
+    networks:
+      - udn-hpds
+    entrypoint: cp /opt/jboss/wildfly/standalone/deployments/pic-sure-auth-services.war /opt/local/docker-config/wildfly/deployments/
+
+  jupyter:
+    image: dbmi/r-datascience-notebook:nhanes-pic-sure-notebook-development-only-August-20-2018
+    restart: always
+    depends_on:
+      - pic-sure-hpds-nhanes
+    networks:
+      - public
+    expose:
+      - 8888
+    ports:
+      - 81:8888
+    volumes:
+      - ./jupyter-notebooks:/home/jovyan/work
+
+  pic-sure-hpds-nhanes:
+    image: dbmi/pic-sure-hpds-nhanes:Oct-24-2018-ResultInstanceId_41_enc
+    restart: always
+    networks:
+      - public
+    expose:
+      - 8080
+    ports:
+      - 8080:8080
+    environment:
+      - HEAPSIZE=1024
+      - CACHESIZE=500
+      - SMALL_TASK_THREADS=1
+      - LARGE_TASK_THREADS=1
+      - SMALL_JOB_LIMIT=100
+      - ID_BATCH_SIZE=50000
+      - SURVIVOR_RATIO=255
+
+networks:
+  udn-hpds:
+    external:
+      name: udn-hpds
+
+volumes:
+  picsure-data:
+  picsure-auth-data:
