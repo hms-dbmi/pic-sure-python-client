@@ -22,7 +22,7 @@ class Client:
     @classmethod
     def connect(self, url, token):
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
-        return PicSureClient.Connection(tempurl, token)
+        return PicSureClient.Connection(url, token)
 
 class Connection:
     def __init__(self, url, token):
