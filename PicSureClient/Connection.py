@@ -10,52 +10,100 @@ class Client:
     @classmethod
     def version(self):
         print(PicSureClient.__package__ + " Library (version " + PicSureClient.__version__ + ")\n")
+
     @classmethod
     def help(self):
         print("""
-        This is the help information for PIC-SURE Client Library
-            client = PicSureClient.Client
-            client.version()
-            client.help()
-            connection = client.connect(<url>, <token>)
+        [HELP] PicSureClient.Client()
+            .version()                      gives version information for library
+            .connect(<url>, <token>)        returns a connection object
         """)
-        pass
+
     @classmethod
     def connect(self, url, token):
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
-        return PicSureClient.Connection(url,token)
+        return PicSureClient.Connection(tempurl, token)
 
 class Connection:
     def __init__(self, url, token):
-        self.url = url
+        tempurl = url.strip()
+        if tempurl.endswith("/"):
+            tempurl = url
+        else:
+            tempurl = tempurl + "/"
+        self.url = tempurl
         self._token = token
 
     def help(self):
-        print("This is the help string for the PicSureClient.help() function.")
-        pass
+        print("""
+        [HELP] PicSureClient.Client.connect(url, token)
+            .list()                         Prints a list of available resources
+            .about(resource_uuid)           Prints details about a specific resource
+            
+        [Connect to Resource]
+            To connect to a resource load its associated resource code library
+            and then pass the API connection object (this object) to the
+            the library's Client object like this:
+            
+            myPicSureConn = PicSureClient.Client.connect(url, token)
+            myResourceAdapter = PicSureHpdsLib.Adapter(myPicSureConn)
+            myResource = myResourceAdapter.useResource(resource_uuid)
+            myResource.help()
+            
+            * The above example connects to a HPDS resource.  Each resource has
+              a specific type which has its own adapter library.  Libraries will
+              follow the naming convention: "PicSureXyzLib" where "Xyz" 
+              specifies the adapter's storage format.
+        """)
 
-    def about(self):
+    def about(self, resourceId = None):
         # print out info from /info about the endpoint
+        # TODO: finish this
+        url = self.url + "info/"
+        if resourceId == None:
+            url = url + "resources"
+        else:
+            url = url + str(resourceId)
+
         h = httplib2.Http()
-        (resp_headers, content) = h.request(self.url, "POST")
-        pass
+        hdrs={
+            "Content-Type":"application/json",
+            "Authorization":"Bearer " + self._token
+        }
+        (resp_headers, content) = h.request(uri=url, method="GET", headers=hdrs)
+        if resp_headers["status"] != "200":
+            print("ERROR: HTTP response was bad")
+            print(resp_headers)
+            print(content)
+            return None
+        else:
+            return {"headers":resp_headers, "content":content}
 
     def list(self):
-        listing = self.resources()
-        print("|__uuid".ljust(39, '_') + '|_name'.ljust(50, '_'))
+        listing = self.getResources()
+        print("+".ljust(39, '-') + '+'.ljust(55, '-'))
+        print("|  Resource UUID".ljust(39, ' ') + '|  Resource Name'.ljust(50, ' '))
+        print("+".ljust(39, '-') + '+'.ljust(55, '-'))
         for rec in listing:
             print('| ' + rec['uuid'].ljust(35,' ') + ' | ' + rec['name'])
             print('| Description: '+rec['description'])
-            print('+'.ljust(89,'-'))
+            print("+".ljust(39, '-') + '+'.ljust(55, '-'))
 
-    def resources(self):
+    def getInfo(self, uuid):
+        pass
+
+    def getResources(self):
         """PicSureClient.resources() function is used to list all resources on the connected endpoint"""
         httpConn = httplib2.Http()
-        httpHeaders = {'content-type':'application/json', 'Authorization':'Bearer '+self._token}
-        (resp_headers, content) = httpConn.request(self.url+"/info/resources", "GET", headers=httpHeaders)
-        return json.loads(content)
-
-
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
+        (resp_headers, content) = httpConn.request(self.url+"info/resources", "GET", headers=httpHeaders)
+        if resp_headers["status"] != "200":
+            print("ERROR: HTTP response was bad")
+            print(resp_headers)
+            print(content)
+            return list()
+        else:
+            return json.loads(content)
 
     def _api_obj(self):
         """PicSureClient._api_obj() function returns a new, preconfigured PicSureConnectionAPI class instance """
@@ -67,29 +115,71 @@ class PicSureConnectionAPI:
         self.url = url
         self._token = token
 
-    def info(self):
+    def info(self, resource_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L43
-        pass
+        import json
+        httpConn = httplib2.Http()
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
+        url = self.url + "info/" + resource_uuid
+        (resp_headers, content) = httpConn.request(url, "POST", headers=httpHeaders, body="{}")
+        if resp_headers["status"] != "200":
+            print("ERROR: HTTP response was bad")
+            print(url)
+            print(resp_headers)
+            print(content)
+            return list()
+        else:
+            return json.loads(content)
 
-    def search(self):
+    def search(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L69
-        pass
+        import json
+        httpConn = httplib2.Http()
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
+        if query == None:
+            bodystr = json.dumps({"query":""})
+        else:
+            bodystr = str(query)
+        url = self.url + "search/" + resource_uuid
+        (resp_headers, content) = httpConn.request(url, "POST", headers=httpHeaders, body=bodystr)
+        if resp_headers["status"] != "200":
+            print("ERROR: HTTP response was bad")
+            print(url)
+            print(resp_headers)
+            print(content)
+            return '{"results":{}, "error":true}'
+        else:
+            return content.decode("utf-8")
 
-    def asyncQuery(self, query):
+    def asyncQuery(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L98
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         pass
 
-    def syncQuery(self, query):
+    def syncQuery(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L186
-        pass
+        httpConn = httplib2.Http()
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
+        url = self.url + "query/sync"
+        (resp_headers, content) = httpConn.request(url, "POST", headers=httpHeaders, body=query)
+        if resp_headers["status"] != "200":
+            print("ERROR: HTTP response was bad")
+            print(url)
+            print(resp_headers)
+            print(content)
+            return ""
+        else:
+            return content
 
     def queryStatus(self, resource_uuid, query_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L124
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         pass
 
     def queryResult(self, resource_uuid, query_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L155
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         pass
