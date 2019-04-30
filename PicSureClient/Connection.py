@@ -65,16 +65,13 @@ class Connection:
         else:
             url = url + str(resourceId)
 
-        h = httplib2.Http()
-        hdrs={
-            "Content-Type":"application/json",
-            "Authorization":"Bearer " + self._token
-        }
-        (resp_headers, content) = h.request(uri=url, method="GET", headers=hdrs)
+        httpConn = httplib2.Http()
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
+        (resp_headers, content) = httpConn.request(url, "GET", headers=httpHeaders)
         if resp_headers["status"] != "200":
             print("ERROR: HTTP response was bad")
             print(resp_headers)
-            print(content)
+            print(content.decode("utf-8"))
             return None
         else:
             return {"headers":resp_headers, "content":content}
@@ -96,14 +93,15 @@ class Connection:
         """PicSureClient.resources() function is used to list all resources on the connected endpoint"""
         httpConn = httplib2.Http()
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        (resp_headers, content) = httpConn.request(self.url+"info/resources", "GET", headers=httpHeaders)
+        url = self.url + "info/resources"
+        (resp_headers, content) = httpConn.request(url, "GET", headers=httpHeaders)
         if resp_headers["status"] != "200":
             print("ERROR: HTTP response was bad")
             print(resp_headers)
-            print(content)
+            print(content.decode("utf-8"))
             return list()
         else:
-            return json.loads(content)
+            return json.loads(content.decode("utf-8"))
 
     def _api_obj(self):
         """PicSureClient._api_obj() function returns a new, preconfigured PicSureConnectionAPI class instance """
@@ -117,7 +115,6 @@ class PicSureConnectionAPI:
 
     def info(self, resource_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L43
-        import json
         httpConn = httplib2.Http()
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         url = self.url + "info/" + resource_uuid
@@ -126,15 +123,14 @@ class PicSureConnectionAPI:
             print("ERROR: HTTP response was bad")
             print(url)
             print(resp_headers)
-            print(content)
+            print(content.decode("utf-8"))
             return list()
         else:
-            return json.loads(content)
+            return json.loads(content.decode("utf-8"))
 
     def search(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L69
-        import json
         httpConn = httplib2.Http()
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         if query == None:
@@ -147,10 +143,10 @@ class PicSureConnectionAPI:
             print("ERROR: HTTP response was bad")
             print(url)
             print(resp_headers)
-            print(content)
+            print(content.decode("utf-8"))
             return '{"results":{}, "error":true}'
         else:
-            return content.decode("utf-8")
+            return content
 
     def asyncQuery(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
@@ -169,7 +165,7 @@ class PicSureConnectionAPI:
             print("ERROR: HTTP response was bad")
             print(url)
             print(resp_headers)
-            print(content)
+            print(content.decode('utf-8'))
             return ""
         else:
             return content
