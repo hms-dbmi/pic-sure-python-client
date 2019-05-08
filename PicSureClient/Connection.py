@@ -72,9 +72,9 @@ class Connection:
             print("ERROR: HTTP response was bad")
             print(resp_headers)
             print(content.decode("utf-8"))
-            return None
+            return {"error":True, "headers":resp_headers, "content":content.decode("utf-8")}
         else:
-            return {"headers":resp_headers, "content":content}
+            return {"error":False, "headers":resp_headers, "content":json.loads(content.decode('utf-8'))}
 
     def list(self):
         listing = self.getResources()
@@ -146,7 +146,7 @@ class PicSureConnectionAPI:
             print(content.decode("utf-8"))
             return '{"results":{}, "error":true}'
         else:
-            return content
+            return content.decode("utf-8")
 
     def asyncQuery(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
@@ -168,7 +168,7 @@ class PicSureConnectionAPI:
             print(content.decode('utf-8'))
             return ""
         else:
-            return content
+            return content.decode("utf-8")
 
     def queryStatus(self, resource_uuid, query_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L124
