@@ -124,7 +124,7 @@ class PicSureConnectionAPI:
             print(url)
             print(resp_headers)
             print(content.decode("utf-8"))
-            return list()
+            return '{"results":{}, "error":"true"}'
         else:
             return json.loads(content.decode("utf-8"))
 
@@ -144,7 +144,7 @@ class PicSureConnectionAPI:
             print(url)
             print(resp_headers)
             print(content.decode("utf-8"))
-            return '{"results":{}, "error":true}'
+            return '{"results":{}, "error":"true"}'
         else:
             return content.decode("utf-8")
 
@@ -166,7 +166,7 @@ class PicSureConnectionAPI:
             print(url)
             print(resp_headers)
             print(content.decode('utf-8'))
-            return ""
+            return '{"results":{}, "error":"true"}'
         else:
             return content.decode("utf-8")
 
