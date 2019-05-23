@@ -99,9 +99,9 @@ class Connection:
             print("ERROR: HTTP response was bad")
             print(resp_headers)
             print(content.decode("utf-8"))
-            return list()
+            return "[]"
         else:
-            return json.loads(content.decode("utf-8"))
+            return content.decode("utf-8")
 
     def _api_obj(self):
         """PicSureClient._api_obj() function returns a new, preconfigured PicSureConnectionAPI class instance """
