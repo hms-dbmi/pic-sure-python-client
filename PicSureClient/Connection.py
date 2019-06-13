@@ -109,11 +109,11 @@ class Connection:
 
     def _api_obj(self):
         """PicSureClient._api_obj() function returns a new, preconfigured PicSureConnectionAPI class instance """
-        return PicSureConnectionAPI(self.url, self._token)
+        return PicSureConnectionAPI(self.url, self._token, allowSelfSignedSSL = self.AllowSelfSigned)
 
 
 class PicSureConnectionAPI:
-    def __init__(self, url, token):
+    def __init__(self, url, token, allowSelfSignedSSL = False):
         # make sure passed URL ends in slash
         url = url.strip()
         if not url.endswith("/"):
@@ -121,6 +121,7 @@ class PicSureConnectionAPI:
         # save values
         self.url = url
         self._token = token
+        self.AllowSelfSigned = allowSelfSignedSSL
 
     def info(self, resource_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L43
