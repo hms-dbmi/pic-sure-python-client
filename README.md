@@ -4,3 +4,5 @@ The PIC-SURE API Base Client Library which can be used by research users to conn
 TBD
 ## Usage
 TBD
+## Supported Python Versions
+TBD
