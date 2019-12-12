@@ -86,9 +86,8 @@ class Connection:
         print("|  Resource UUID".ljust(39, ' ') + '|  Resource Name'.ljust(50, ' '))
         print("+".ljust(39, '-') + '+'.ljust(55, '-'))
         for rec in listing:
-            print('| ' + rec['uuid'].ljust(35,' ') + ' | ' + rec['name'])
-            print('| Description: '+rec['description'])
-            print("+".ljust(39, '-') + '+'.ljust(55, '-'))
+            print('| ' + rec.ljust(35,' '))
+        print("+".ljust(39, '-') + '+'.ljust(55, '-'))
 
     def getInfo(self, uuid):
         pass
