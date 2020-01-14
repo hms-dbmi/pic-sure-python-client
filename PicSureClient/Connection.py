@@ -5,6 +5,7 @@
 import PicSureClient
 import httplib2
 import json
+import sys
 
 class Client:
     @classmethod
@@ -34,6 +35,17 @@ class Connection:
         self.url = tempurl
         self._token = token
         self.AllowSelfSigned = allowSelfSignedSSL
+        if allowSelfSignedSSL is True:
+            print("\x1b[1;31;40m") # bright red text
+            print("""
+        [ WARNING ] you are specifying that you WANT to allow self-signed SSL
+        certificates to be acceptable for connections.  This may be useful for
+        working in a development environment or on systems that host public
+        data.  BEST SECURITY PRACTICES ARE THAT IF YOU ARE WORKING WITH SENSITIVE 
+        DATA THEN ALL SSL CERTS BY THOSE EVIRONMENTS SHOULD NOT BE SELF-SIGNED.  
+            """)
+            print("\x1b[0;37;40m ")  # back to normal text
+
     def help(self):
         print("""
         [HELP] PicSureClient.Client.connect(url, token [, allowSelfSignedSSL = True])
@@ -57,7 +69,10 @@ class Connection:
               
             ** By default, self-signed SSL connections are rejected.  To change
               this behavior pass "allowSelfSignedSSL=True" when creating a 
-              PIC-SURE Connection instance.
+              PIC-SURE Connection instance. THE DEFAULT BEHAVIOR OF THIS SETTING IS
+              CONSIDERED BEST SECURITY PRACTICES. SELF-SIGNED SSL CERTIFICATES SHOULD
+              NOT BE USED TO PROTECT SYSTEMS HOSTING SENSITIVE DATA.
+              
         """)
 
     def about(self, resourceId = None):
