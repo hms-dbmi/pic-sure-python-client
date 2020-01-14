@@ -36,15 +36,16 @@ class Connection:
         self._token = token
         self.AllowSelfSigned = allowSelfSignedSSL
         if allowSelfSignedSSL is True:
+            # user is allowing self-signed SSL certs, serve them a black box warning
             print("\x1b[1;31;40m") # bright red text
             print("""
-        [ WARNING ] you are specifying that you WANT to allow self-signed SSL
-        certificates to be acceptable for connections.  This may be useful for
-        working in a development environment or on systems that host public
-        data.  BEST SECURITY PRACTICES ARE THAT IF YOU ARE WORKING WITH SENSITIVE 
-        DATA THEN ALL SSL CERTS BY THOSE EVIRONMENTS SHOULD NOT BE SELF-SIGNED.  
-            """)
-            print("\x1b[0;37;40m ")  # back to normal text
+!        [ WARNING ] you are specifying that you WANT to allow self-signed SSL            !
+!        certificates to be acceptable for connections.  This may be useful for           !
+!        working in a development environment or on systems that host public              !
+!        data.  BEST SECURITY PRACTICES ARE THAT IF YOU ARE WORKING WITH SENSITIVE        !
+!        DATA THEN ALL SSL CERTS BY THOSE EVIRONMENTS SHOULD NOT BE SELF-SIGNED.          !""")
+            print("\x1b[0;30;47m ")  # back to normal text for jupyter notebooks
+            # print("\x1b[0;37;40m ")  # back to normal text for black console windows
 
     def help(self):
         print("""
@@ -67,12 +68,11 @@ class Connection:
               follow the naming convention: "PicSureXyzLib" where "Xyz" 
               specifies the adapter's storage format.
               
-            ** By default, self-signed SSL connections are rejected.  To change
-              this behavior pass "allowSelfSignedSSL=True" when creating a 
+            ** By default, self-signed SSL certificates are rejected.  To change
+              this behavior pass "allowSelfSignedSSL = True" when creating a 
               PIC-SURE Connection instance. THE DEFAULT BEHAVIOR OF THIS SETTING IS
               CONSIDERED BEST SECURITY PRACTICES. SELF-SIGNED SSL CERTIFICATES SHOULD
-              NOT BE USED TO PROTECT SYSTEMS HOSTING SENSITIVE DATA.
-              
+              NEVER BE USED TO PROTECT SYSTEMS HOSTING SENSITIVE DATA.              
         """)
 
     def about(self, resourceId = None):
