@@ -37,15 +37,15 @@ class Connection:
         self.AllowSelfSigned = allowSelfSignedSSL
         if allowSelfSignedSSL is True:
             # user is allowing self-signed SSL certs, serve them a black box warning
-            print("\x1b[1;31;40m") # bright red text
-            print("""
-!        [ WARNING ] you are specifying that you WANT to allow self-signed SSL            !
-!        certificates to be acceptable for connections.  This may be useful for           !
-!        working in a development environment or on systems that host public              !
-!        data.  BEST SECURITY PRACTICES ARE THAT IF YOU ARE WORKING WITH SENSITIVE        !
-!        DATA THEN ALL SSL CERTS BY THOSE EVIRONMENTS SHOULD NOT BE SELF-SIGNED.          !""")
-            print("\x1b[0;30;47m ")  # back to normal text for jupyter notebooks
-            # print("\x1b[0;37;40m ")  # back to normal text for black console windows
+            print("""\033[38;5;196;40m\n
++=========================================================================================+
+|        [ WARNING ] you are specifying that you WANT to allow self-signed SSL            |
+|        certificates to be acceptable for connections.  This may be useful for           |
+|        working in a development environment or on systems that host public              |
+|        data.  BEST SECURITY PRACTICES ARE THAT IF YOU ARE WORKING WITH SENSITIVE        |
+|        DATA THEN ALL SSL CERTS BY THOSE EVIRONMENTS SHOULD NOT BE SELF-SIGNED.          |
++=========================================================================================+
+            \033[39;49m""")
 
     def help(self):
         print("""
