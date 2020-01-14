@@ -45,7 +45,7 @@ class Connection:
 |        data.  BEST SECURITY PRACTICES ARE THAT IF YOU ARE WORKING WITH SENSITIVE        |
 |        DATA THEN ALL SSL CERTS BY THOSE EVIRONMENTS SHOULD NOT BE SELF-SIGNED.          |
 +=========================================================================================+
-            \033[39;49m""")
+\033[39;49m""")
 
     def help(self):
         print("""
