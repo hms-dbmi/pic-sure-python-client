@@ -9,7 +9,7 @@ To use the Python Connector Library, first install a pip package in the current 
 import sys
 pip install --upgrade pip
 pip install git+https://github.com/hms-dbmi/pic-sure-python-client.git    
-install git+https://github.com/hms-dbmi/pic-sure-python-adapter-hpds.git
+pip install git+https://github.com/hms-dbmi/pic-sure-python-adapter-hpds.git
 pip install pandas
 pip install matplotlib
 ```
