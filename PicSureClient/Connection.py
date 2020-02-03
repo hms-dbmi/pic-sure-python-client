@@ -5,6 +5,7 @@
 import PicSureClient
 import httplib2
 import json
+from urllib.parse import urlparse
 import sys
 
 class Client:
@@ -27,13 +28,13 @@ class Client:
 
 class Connection:
     def __init__(self, url, token, allowSelfSignedSSL = False):
-        tempurl = url.strip()
-        if tempurl.endswith("/"):
-            tempurl = url
-        else:
-            tempurl = tempurl + "/"
-        self.url = tempurl
+        url_ret = urlparse(url)
+        self.psama_url = url_ret.scheme + "://" + url_ret.netloc + "/psama/"
+        self.url = url_ret.scheme + "://" + url_ret.netloc + url_ret.path
+        if not self.url.endswith("/"):
+            self.url = self.url + "/"
         self._token = token
+
         self.AllowSelfSigned = allowSelfSignedSSL
         if allowSelfSignedSSL is True:
             # user is allowing self-signed SSL certs, serve them a black box warning
@@ -123,19 +124,31 @@ class Connection:
 
     def _api_obj(self):
         """PicSureClient._api_obj() function returns a new, preconfigured PicSureConnectionAPI class instance """
-        return PicSureConnectionAPI(self.url, self._token, allowSelfSignedSSL = self.AllowSelfSigned)
+        return PicSureConnectionAPI(self.url, self.psama_url, self._token, allowSelfSignedSSL = self.AllowSelfSigned)
 
 
 class PicSureConnectionAPI:
-    def __init__(self, url, token, allowSelfSignedSSL = False):
-        # make sure passed URL ends in slash
-        url = url.strip()
-        if not url.endswith("/"):
-            url = url + "/"
+    def __init__(self, url_picsure, url_psama, token, allowSelfSignedSSL = False):
         # save values
-        self.url = url
+        self.url_picsure = url_picsure
+        self.url_psama = url_psama
         self._token = token
         self.AllowSelfSigned = allowSelfSignedSSL
+
+    def profile(self):
+        from urllib.parse import urlparse
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
+        (resp_headers, content) = httpConn.request(self.url_psama + "user/me", "GET", headers=httpHeaders)
+        if resp_headers["status"] != "200":
+            print("ERROR: HTTP response was bad")
+            print(self.url_psama + "user/me")
+            print(resp_headers)
+            print(content.decode("utf-8"))
+            return '{"results":{}, "error":"true"}'
+        else:
+            return content.decode("utf-8")
+
 
     def info(self, resource_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L43
