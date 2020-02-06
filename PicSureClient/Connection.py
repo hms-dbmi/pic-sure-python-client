@@ -143,7 +143,7 @@ class PicSureConnectionAPI:
         from urllib.parse import urlparse
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        (resp_headers, content) = httpConn.request(self.url_psama + "user/me", "GET", headers=httpHeaders)
+        (resp_headers, content) = httpConn.request(uri=self.url_psama + "user/me", method="GET", headers=httpHeaders)
         if resp_headers["status"] != "200":
             print("ERROR: HTTP response was bad")
             print(self.url_psama + "user/me")
@@ -158,8 +158,8 @@ class PicSureConnectionAPI:
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L43
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        url = self.url + "info/" + resource_uuid
-        (resp_headers, content) = httpConn.request(url, "POST", headers=httpHeaders, body="{}")
+        url = self.url_picsure + "info/" + resource_uuid
+        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body="{}")
         if resp_headers["status"] != "200":
             print("ERROR: HTTP response was bad")
             print(url)
@@ -169,7 +169,8 @@ class PicSureConnectionAPI:
         else:
             return content.decode("utf-8")
 
-    def search(self, resource_uuid, query):
+
+    def search(self, resource_uuid, query=None):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L69
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
@@ -178,8 +179,8 @@ class PicSureConnectionAPI:
             bodystr = json.dumps({"query":""})
         else:
             bodystr = str(query)
-        url = self.url + "search/" + resource_uuid
-        (resp_headers, content) = httpConn.request(url, "POST", headers=httpHeaders, body=bodystr)
+        url = self.url_picsure + "search/" + resource_uuid
+        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=bodystr)
         if resp_headers["status"] != "200":
             print("ERROR: HTTP response was bad")
             print(url)
@@ -200,8 +201,8 @@ class PicSureConnectionAPI:
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L186
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        url = self.url + "query/sync"
-        (resp_headers, content) = httpConn.request(url, "POST", headers=httpHeaders, body=query)
+        url = self.url_picsure + "query/sync"
+        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query)
         if resp_headers["status"] != "200":
             print("ERROR: HTTP response was bad")
             print(url)
