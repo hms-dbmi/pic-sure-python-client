@@ -38,7 +38,7 @@ class Connection:
         self.AllowSelfSigned = allowSelfSignedSSL
         if allowSelfSignedSSL is True:
             # user is allowing self-signed SSL certs, serve them a black box warning
-            print("""\033[38;5;196;40m\n
+            print("""\033[38;5;91;40m\n
 +=========================================================================================+
 |        [ WARNING ] you are specifying that you WANT to allow self-signed SSL            |
 |        certificates to be acceptable for connections.  This may be useful for           |
@@ -76,25 +76,18 @@ class Connection:
               NEVER BE USED TO PROTECT SYSTEMS HOSTING SENSITIVE DATA.              
         """)
 
-    def about(self, resourceId = None):
+    def about(self, resourceId):
         # print out info from /info about the endpoint
         # TODO: finish this
-        url = self.url + "info/"
-        if resourceId == None:
-            url = url + "resources"
+        results = self.getInfo(resourceId)
+        print(str("---[ Info about "+resourceId+" ]").ljust(94, '-'))
+        if type(results) is str:
+            info = json.loads(results)
+            print(json.dumps(info, indent=2))
         else:
-            url = url + str(resourceId)
+            print("!!!! ERROR !!!!")
+            print(json.dumps(results, indent=2))
 
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        (resp_headers, content) = httpConn.request(url, "GET", headers=httpHeaders)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(resp_headers)
-            print(content.decode("utf-8"))
-            return {"error":True, "headers":resp_headers, "content":json.loads(content.decode("utf-8"))}
-        else:
-            return {"error":False, "headers":resp_headers, "content":json.loads(content.decode('utf-8'))}
 
     def list(self):
         listing = json.loads(self.getResources())
@@ -106,14 +99,25 @@ class Connection:
         print("+".ljust(39, '-') + '+'.ljust(55, '-'))
 
     def getInfo(self, uuid):
-        pass
+        url = self.url + "info/" + str(uuid)
+
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
+        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body="{}")
+        if resp_headers["status"] != "200":
+            print("ERROR: HTTP response was bad")
+            print(resp_headers)
+            print(content.decode("utf-8"))
+            return {"error":True, "headers":resp_headers, "content":json.loads(content.decode("utf-8"))}
+        else:
+            return content.decode('utf-8')
 
     def getResources(self):
         """PicSureClient.resources() function is used to list all resources on the connected endpoint"""
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         url = self.url + "info/resources"
-        (resp_headers, content) = httpConn.request(url, "GET", headers=httpHeaders)
+        (resp_headers, content) = httpConn.request(uri=url, method="GET", headers=httpHeaders)
         if resp_headers["status"] != "200":
             print("ERROR: HTTP response was bad")
             print(resp_headers)
