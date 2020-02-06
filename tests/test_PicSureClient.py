@@ -149,6 +149,28 @@ class TestConnection(unittest.TestCase):
         MockHttp.assert_called_with(body="{}", uri=test_url + "info/"+test_uuid, headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="POST")
 
 
+    def test_connection_func_api_obj(self):
+        test_url = "http://some.url/PIC-SURE/"
+        test_token = "some_security_token"
+
+        test_conn = PicSureClient.Connection(test_url, test_token)
+        test_api_obj = test_conn._api_obj()
+        self.assertIsInstance(test_api_obj, PicSureClient.PicSureConnectionAPI, "Connection._api_obj() returns the wrong object type")
+        self.assertEqual(test_url, test_api_obj.url_picsure)
+        self.assertEqual(test_token, test_api_obj._token)
+        self.assertEqual(test_api_obj.AllowSelfSigned, False, "Accepting self-signed SSL certificates should NOT be the default!")
+
 
 class TestConnectionAPI(unittest.TestCase):
-    pass
+    def test_connection_api_create(self):
+        test_url_psama = "http://some.url/PSAMA/"
+        test_url_picsure = "http://some.url/PIC-SURE/"
+        test_token = "some_security_token"
+
+        test_api_obj = PicSureClient.PicSureConnectionAPI(test_url_picsure, test_url_psama, test_token)
+        self.assertEqual(test_url_psama, test_api_obj.url_psama)
+        self.assertEqual(test_url_picsure, test_api_obj.url_picsure)
+        self.assertEqual(test_token, test_api_obj._token)
+        self.assertEqual(test_api_obj.AllowSelfSigned, False, "Accepting self-signed SSL certificates should NOT be the default!")
+
+
