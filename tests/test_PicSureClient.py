@@ -224,7 +224,6 @@ class TestConnectionAPI(unittest.TestCase):
         json_content = json.dumps(resource_info)
         mock_http.return_value = (resp_headers, json_content.encode("utf-8"))
 
-
         test_api_obj = PicSureClient.PicSureConnectionAPI(test_url_picsure, test_url_psama, test_token)
         test_info = test_api_obj.search(test_uuid)
         self.assertEqual(json_content, test_info)
@@ -232,21 +231,40 @@ class TestConnectionAPI(unittest.TestCase):
 
 
     @patch('httplib2.Http.request')
-    def test_connectionapi_func_search_blank(self, mock_http):
+    def test_connectionapi_func_search_term(self, mock_http):
         test_url_psama = "http://some.url/PSAMA/"
         test_url_picsure = "http://some.url/PIC-SURE/"
         test_token = "some_security_token"
         test_uuid = "some_resource_uuid"
         test_query = {"query":"some-term"}
-
         test_query_json = json.dumps(test_query)
+
         resp_headers = {"status": "200"}
-        resource_info = {"results":{"phenotypes":{}, "info":{}},"searchQuery":""}
+        resource_info = {"results":{"phenotypes":{}, "info":{}},"searchQuery":"some-term"}
         json_content = json.dumps(resource_info)
         mock_http.return_value = (resp_headers, json_content.encode("utf-8"))
-
 
         test_api_obj = PicSureClient.PicSureConnectionAPI(test_url_picsure, test_url_psama, test_token)
         test_info = test_api_obj.search(test_uuid, test_query_json)
         self.assertEqual(json_content, test_info)
         mock_http.assert_called_with(uri=test_url_picsure + "search/" + test_uuid, headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="POST", body=test_query_json)
+
+
+    # @patch('httplib2.Http.request')
+    # def test_connectionapi_func_async_query(self, mock_http):
+    #     test_url_psama = "http://some.url/PSAMA/"
+    #     test_url_picsure = "http://some.url/PIC-SURE/"
+    #     test_token = "some_security_token"
+    #     test_uuid = "some_resource_uuid"
+    #     test_query = {"query":{}}
+    #     test_query_json = json.dumps(test_query)
+    #
+    #     resp_headers = {"status": "200"}
+    #     resource_info = {"results":{}}
+    #     json_content = json.dumps(resource_info)
+    #     mock_http.return_value = (resp_headers, json_content.encode("utf-8"))
+    #
+    #     test_api_obj = PicSureClient.PicSureConnectionAPI(test_url_picsure, test_url_psama, test_token)
+    #     test_info = test_api_obj.search(test_uuid, test_query_json)
+    #     self.assertEqual(json_content, test_info)
+    #     mock_http.assert_called_with(uri=test_url_picsure + "search/" + test_uuid, headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="POST", body=test_query_json)
