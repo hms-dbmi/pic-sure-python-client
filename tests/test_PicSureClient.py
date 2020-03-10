@@ -254,6 +254,7 @@ class TestConnectionAPI(unittest.TestCase):
 
     @patch('httplib2.Http.request')
     def test_connectionapi_func_query_async(self, mock_http):
+        # TODO: properly implement this functionality
         test_url_psama = "http://some.url/PSAMA/"
         test_url_picsure = "http://some.url/PIC-SURE/"
         test_token = "some_security_token"
@@ -269,7 +270,7 @@ class TestConnectionAPI(unittest.TestCase):
         test_api_obj = PicSureClient.PicSureConnectionAPI(test_url_picsure, test_url_psama, test_token)
         test_info = test_api_obj.asyncQuery(test_uuid, test_query_json)
         self.assertEqual(json_content, test_info)
-        mock_http.assert_called_with(uri=test_url_picsure + "query", headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="POST", body=test_query_json)
+        mock_http.assert_called_with(uri=test_url_picsure + "search/" + test_uuid, headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="POST", body=test_query_json)
 
 
     @patch('httplib2.Http.request')
@@ -294,12 +295,12 @@ class TestConnectionAPI(unittest.TestCase):
 
     @patch('httplib2.Http.request')
     def test_connectionapi_func_query_status(self, mock_http):
+        # TODO: properly implement this functionality
         test_url_psama = "http://some.url/PSAMA/"
         test_url_picsure = "http://some.url/PIC-SURE/"
         test_token = "some_security_token"
-        test_resource_uuid = "some_resource_uuid"
-        test_query_uuid = "some_query_uuid"
-        test_query = {"resourceUUID": test_resource_uuid, "query": {}, "resourceCredentials":{}}
+        test_uuid = "some_query_uuid"
+        test_query = {"query":{}}
         test_query_json = json.dumps(test_query)
 
         resp_headers = {"status": "200"}
@@ -308,9 +309,9 @@ class TestConnectionAPI(unittest.TestCase):
         mock_http.return_value = (resp_headers, json_content.encode("utf-8"))
 
         test_api_obj = PicSureClient.PicSureConnectionAPI(test_url_picsure, test_url_psama, test_token)
-        test_info = test_api_obj.queryStatus(test_resource_uuid, test_query_uuid)
+        test_info = test_api_obj.syncQuery(test_uuid, test_query_json)
         self.assertEqual(json_content, test_info)
-        mock_http.assert_called_with(uri=test_url_picsure + "query/" + test_query_uuid + "/status", headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="POST", body=test_query_json)
+        mock_http.assert_called_with(uri=test_url_picsure + "query/status/" + test_uuid, headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="POST", body=test_query_json)
 
 
     @patch('httplib2.Http.request')
@@ -319,9 +320,9 @@ class TestConnectionAPI(unittest.TestCase):
         test_url_psama = "http://some.url/PSAMA/"
         test_url_picsure = "http://some.url/PIC-SURE/"
         test_token = "some_security_token"
-        test_query_uuid = "some_query_uuid"
-        test_resource_uuid = "some_resource_uuid"
-        test_query_json = "{}"
+        test_uuid = "some_query_uuid"
+        test_query = {"query":{}}
+        test_query_json = json.dumps(test_query)
 
         resp_headers = {"status": "200"}
         resource_info = {"results":{}}
@@ -329,6 +330,6 @@ class TestConnectionAPI(unittest.TestCase):
         mock_http.return_value = (resp_headers, json_content.encode("utf-8"))
 
         test_api_obj = PicSureClient.PicSureConnectionAPI(test_url_picsure, test_url_psama, test_token)
-        test_info = test_api_obj.queryResult(test_resource_uuid, test_query_uuid)
+        test_info = test_api_obj.syncQuery(test_uuid, test_query_json)
         self.assertEqual(json_content, test_info)
-        mock_http.assert_called_with(uri=test_url_picsure + "query/" + test_query_uuid + "/result", headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="POST", body=test_query_json)
+        mock_http.assert_called_with(uri=test_url_picsure + "query/results/" + test_uuid, headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="POST", body=test_query_json)
