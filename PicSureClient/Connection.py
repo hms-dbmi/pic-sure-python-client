@@ -170,7 +170,6 @@ class PicSureConnectionAPI:
                     for app_info in application_objs:
                         if "name" in app_info:
                             if app_info["name"] == "PICSURE":
-                                print(json.dumps(app_info, indent=4))
                                 response_objs["appInfo"] = app_info
                                 break
 
@@ -185,14 +184,9 @@ class PicSureConnectionAPI:
                             print(content.decode("utf-8"))
                             return '{"results":{}, "error":"true"}'
                         else:
-
                             response_objs["queryTemplate"] = json.loads(content.decode("utf-8"))["queryTemplate"]
 
             return json.dumps(response_objs)
-
-
-
-
 
 
     def info(self, resource_uuid):
