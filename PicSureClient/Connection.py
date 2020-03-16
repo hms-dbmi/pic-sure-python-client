@@ -38,7 +38,7 @@ class Connection:
         self.AllowSelfSigned = allowSelfSignedSSL
         if allowSelfSignedSSL is True:
             # user is allowing self-signed SSL certs, serve them a black box warning
-            print("""\033[31;40m\n
+            print("""\033[38;5;91;40m\n
 +=========================================================================================+
 |        [ WARNING ] you are specifying that you WANT to allow self-signed SSL            |
 |        certificates to be acceptable for connections.  This may be useful for           |
@@ -140,13 +140,13 @@ class PicSureConnectionAPI:
         self.AllowSelfSigned = allowSelfSignedSSL
 
     def profile(self):
+        from urllib.parse import urlparse
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        temp_url = self.url_psama + "user/me"
-        (resp_headers, content) = httpConn.request(uri=temp_url, method="GET", headers=httpHeaders)
+        (resp_headers, content) = httpConn.request(uri=self.url_psama + "user/me", method="GET", headers=httpHeaders)
         if resp_headers["status"] != "200":
             print("ERROR: HTTP response was bad requesting PSAMA profile")
-            print(temp_url)
+            print(self.url_psama + "user/me")
             print(resp_headers)
             print(content.decode("utf-8"))
             return '{"results":{}, "error":"true"}'
@@ -169,7 +169,6 @@ class PicSureConnectionAPI:
                         response_objs["queryTemplate"] = json.loads(content.decode("utf-8"))["queryTemplate"]
 
             return json.dumps(response_objs)
-
 
     def info(self, resource_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L43
@@ -210,18 +209,7 @@ class PicSureConnectionAPI:
     def asyncQuery(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L98
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        url = self.url_picsure + "query"
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode('utf-8'))
-            return '{"results":{}, "error":"true"}'
-        else:
-            return content.decode("utf-8")
         pass
 
     def syncQuery(self, resource_uuid, query):
@@ -242,33 +230,10 @@ class PicSureConnectionAPI:
 
     def queryStatus(self, resource_uuid, query_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L124
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        url = self.url_picsure + "query/" + query_uuid + "/status"
-        query = {"resourceUUID": resource_uuid, "query": {}, "resourceCredentials":{}}
-        query_text = json.dumps(query)
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query_text)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode('utf-8'))
-            return '{"results":{}, "error":"true"}'
-        else:
-            return content.decode("utf-8")
+        pass
 
     def queryResult(self, resource_uuid, query_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L155
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        url = self.url_picsure + "query/" + query_uuid + "/result"
-        query = '{}'
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode('utf-8'))
-            return '{"results":{}, "error":"true"}'
-        else:
-            return content.decode("utf-8")
+        pass
