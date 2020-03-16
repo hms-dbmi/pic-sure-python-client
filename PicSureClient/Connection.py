@@ -53,27 +53,27 @@ class Connection:
         [HELP] PicSureClient.Client.connect(url, token [, allowSelfSignedSSL = True])
             .list()                         Prints a list of available resources
             .about(resource_uuid)           Prints details about a specific resource
-            
+
         [Connect to Resource]
             To connect to a resource load its associated resource code library
             and then pass the API connection object (this object) to the
             the library's Client object like this:
-            
+
             myPicSureConn = PicSureClient.Client.connect(url, token)
             myResourceAdapter = PicSureHpdsLib.Adapter(myPicSureConn)
             myResource = myResourceAdapter.useResource(resource_uuid)
             myResource.help()
-            
+
             * The above example connects to a HPDS resource.  Each resource has
               a specific type which has its own adapter library.  Libraries will
-              follow the naming convention: "PicSureXyzLib" where "Xyz" 
+              follow the naming convention: "PicSureXyzLib" where "Xyz"
               specifies the adapter's storage format.
-              
+
             ** By default, self-signed SSL certificates are rejected.  To change
-              this behavior pass "allowSelfSignedSSL = True" when creating a 
+              this behavior pass "allowSelfSignedSSL = True" when creating a
               PIC-SURE Connection instance. THE DEFAULT BEHAVIOR OF THIS SETTING IS
               CONSIDERED BEST SECURITY PRACTICES. SELF-SIGNED SSL CERTIFICATES SHOULD
-              NEVER BE USED TO PROTECT SYSTEMS HOSTING SENSITIVE DATA.              
+              NEVER BE USED TO PROTECT SYSTEMS HOSTING SENSITIVE DATA.
         """)
 
     def about(self, resourceId):
@@ -145,14 +145,30 @@ class PicSureConnectionAPI:
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         (resp_headers, content) = httpConn.request(uri=self.url_psama + "user/me", method="GET", headers=httpHeaders)
         if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
+            print("ERROR: HTTP response was bad requesting PSAMA profile")
             print(self.url_psama + "user/me")
             print(resp_headers)
             print(content.decode("utf-8"))
             return '{"results":{}, "error":"true"}'
         else:
-            return content.decode("utf-8")
+            response_str = content.decode("utf-8")
 
+            # Make sure we have a "queryTemplate"
+            response_objs = json.loads(response_str)
+            if "queryTemplate" not in response_objs:
+                    #load the query template
+                    temp_url = self.url_psama + "user/me/queryTemplate/"
+                    (resp_headers, content) = httpConn.request(uri=temp_url, method="GET", headers=httpHeaders)
+                    if resp_headers["status"] != "200":
+                        print("ERROR: HTTP response was bad requesting application queryTemplate")
+                        print(temp_url)
+                        print(resp_headers)
+                        print(content.decode("utf-8"))
+                        return '{"results":{}, "error":"true"}'
+                    else:
+                        response_objs["queryTemplate"] = json.loads(content.decode("utf-8"))["queryTemplate"]
+
+            return json.dumps(response_objs)
 
     def info(self, resource_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L43
