@@ -182,7 +182,7 @@ class TestConnectionAPI(unittest.TestCase):
         test_uuid = "some_resource_uuid"
 
         resp_headers = {"status": "200"}
-        resource_info = {"uuid":test_uuid, "email":"some@email.edu", "privileges":["SUPER_ADMIN","ROLE_SYSTEM","PIC-SURE Unrestricted Query","ADMIN"]}
+        resource_info = {"uuid":test_uuid, "email":"some@email.edu", "privileges":["SUPER_ADMIN","ROLE_SYSTEM","PIC-SURE Unrestricted Query","ADMIN"], "queryTemplate":""}
         json_content = json.dumps(resource_info)
         mock_http.return_value = (resp_headers, json_content.encode("utf-8"))
 
