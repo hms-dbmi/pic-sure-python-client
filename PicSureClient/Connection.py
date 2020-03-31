@@ -31,6 +31,7 @@ class Connection:
         url_ret = urlparse(url)
         self.psama_url = url_ret.scheme + "://" + url_ret.netloc + "/psama/"
         self.url = url_ret.scheme + "://" + url_ret.netloc + url_ret.path
+        self.only_resource = None
         if not self.url.endswith("/"):
             self.url = self.url + "/"
         self._token = token
@@ -47,6 +48,10 @@ class Connection:
 |        DATA THEN ALL SSL CERTS BY THOSE EVIRONMENTS SHOULD NOT BE SELF-SIGNED.          |
 +=========================================================================================+
 \033[39;49m""")
+
+        # test server connection and automatically list all the Resource UUIDs
+        self.list()
+
 
     def help(self):
         print("""
@@ -113,18 +118,37 @@ class Connection:
             return content.decode('utf-8')
 
     def getResources(self):
+        import socket, httplib2
         """PicSureClient.resources() function is used to list all resources on the connected endpoint"""
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         url = self.url + "info/resources"
-        (resp_headers, content) = httpConn.request(uri=url, method="GET", headers=httpHeaders)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(resp_headers)
-            print(content.decode("utf-8"))
-            return "[]"
+        try:
+            (resp_headers, content) = httpConn.request(uri=url, method="GET", headers=httpHeaders)
+        except (socket.gaierror, httplib2.ServerNotFoundError):
+            print('ERROR: The address "'+url+'" is invalid')
+            return '["ERROR:", "   Invalid URL!"]'.encode()
         else:
-            return content.decode("utf-8")
+            if resp_headers["status"] != "200":
+                if resp_headers["status"] == "401":
+                    ret = ["ERROR:"]
+                    json_resp = json.loads(content.decode("utf-8"))
+                    if "message" in json_resp:
+                        ret.append("    "+json_resp["message"])
+                    else:
+                        ret.append("    See message above.")
+                    return json.dumps(ret).encode()
+                else:
+                    print("ERROR: HTTP response was bad")
+                    print(resp_headers)
+                    print(content.decode("utf-8"))
+                    return '["ERROR:", "    See message above."]'.encode()
+            else:
+                ret = content.decode("utf-8")
+                temp = json.loads(ret)
+                if len(temp) == 1:
+                    self.only_resource = temp[0]
+                return content.decode("utf-8")
 
     def _api_obj(self):
         """PicSureClient._api_obj() function returns a new, preconfigured PicSureConnectionAPI class instance """
