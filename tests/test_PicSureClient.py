@@ -31,9 +31,12 @@ class TestClient(unittest.TestCase):
             self.assertTrue(len(captured.strip()) > 0)
 
 
-    def test_client_func_connect(self):
+    @patch('httplib2.Http.request')
+    def test_client_func_connect_success(self, mock_http):
         test_url = "http://some.url/PIC-SURE/"
         test_token = "some_security_token"
+
+        mock_http.return_value = ({"status": "200"}, '["SOME-RESOURCE-UUID-HERE"]'.encode())
 
         test_obj = PicSureClient.Client.connect(test_url, test_token)
         self.assertIsInstance(test_obj, PicSureClient.Connection, "Client.connect() returns the wrong object type")
@@ -42,16 +45,53 @@ class TestClient(unittest.TestCase):
         self.assertEqual(test_obj.AllowSelfSigned, False, "Accepting self-signed SSL certificates should NOT be the default!")
 
 
-    def test_client_func_connect_selfsigned_ssl(self):
+    @patch('httplib2.Http.request')
+    def test_client_func_connect_fail_url(self, mock_http):
+        import socket
+        import httplib2
         test_url = "http://some.url/PIC-SURE/"
         test_token = "some_security_token"
+
+        # mock_http.side_effect =  socket.gaierror("11001", "getaddressinfo failed")
+        mock_http.side_effect =  httplib2.ServerNotFoundError("Unable to find server at "+test_url)
+
+        with patch('sys.stdout', new=io.StringIO()) as fake_stdout:
+            test_obj = PicSureClient.Client.connect(test_url, test_token)
+            sys.stdout = sys.__stdout__  # Reset redirect. Needed for it to work!
+            captured = fake_stdout.getvalue()
+            print("Captured:\n" + captured)
+            self.assertTrue(captured.strip().index("Invalid URL") > 0, "Should print a warning message when the URL is incorrect!")
+
+
+    @patch('httplib2.Http.request')
+    def test_client_func_connect_fail_token(self, mock_http):
+        import socket
+        test_url = "https://copdgene-dev.hms.harvard.edu/picsure/"
+        test_token = "some_security_token"
+
+        mock_http.return_value = ({"status":"401"}, '{"errorType":"Unauthorized","message":"User is not authorized. [Token invalid or expired]"}'.encode())
+
+        with patch('sys.stdout', new=io.StringIO()) as fake_stdout:
+            test_obj = PicSureClient.Client.connect(test_url, test_token)
+            sys.stdout = sys.__stdout__  # Reset redirect. Needed for it to work!
+            captured = fake_stdout.getvalue()
+            print("Captured:\n" + captured)
+            self.assertTrue(captured.strip().index("Token invalid") > 0, "Should print a warning message when the token is rejected!")
+
+
+    @patch('httplib2.Http.request')
+    def test_client_func_connect_selfsigned_ssl(self, mock_http):
+        test_url = "http://some.url/PIC-SURE/"
+        test_token = "some_security_token"
+
+        mock_http.return_value = ({"status": "200"}, '["SOME-RESOURCE-UUID-HERE"]'.encode())
 
         with patch('sys.stdout', new=io.StringIO()) as fake_stdout:
             test_obj = PicSureClient.Client.connect(test_url, test_token, True)
             sys.stdout = sys.__stdout__  # Reset redirect. Needed for it to work!
             captured = fake_stdout.getvalue()
             print("Captured:\n" + captured)
-            self.assertTrue(len(captured.strip()) > 0, "Should print a warning message when allowing self-signed SSL certificates!")
+            self.assertTrue(captured.strip().index("[ WARNING ]") > 0, "Should print a warning message when allowing self-signed SSL certificates!")
             self.assertEqual(test_obj.AllowSelfSigned, True, "Specified to allow self-signed SSL certificates but it did not propogate")
 
 
