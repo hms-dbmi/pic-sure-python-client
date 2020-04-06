@@ -233,7 +233,6 @@ class PicSureConnectionAPI:
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L98
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
-        httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
         url = self.url_picsure + "query"
         (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query)
         if resp_headers["status"] != "200":
@@ -261,16 +260,14 @@ class PicSureConnectionAPI:
         else:
             return content.decode("utf-8")
 
-    def queryStatus(self, resource_uuid, query_uuid):
+    def queryStatus(self, resource_uuid, query_uuid, query_body):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L124
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
-        httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
         url = self.url_picsure + "query/" + query_uuid + "/status"
-        pass
-        query = {"resourceUUID": resource_uuid, "query": {}, "resourceCredentials": {}}
-        query_text = json.dumps(query)
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query_text)
+        query_obj = json.loads(query_body)
+        query = {"resourceUUID": resource_uuid, "query": query_obj, "resourceCredentials": {}}
+        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=json.dumps(query))
         if resp_headers["status"] != "200":
             print("ERROR: HTTP response was bad")
             print(url)
