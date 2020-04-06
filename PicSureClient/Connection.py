@@ -31,7 +31,7 @@ class Connection:
         url_ret = urlparse(url)
         self.psama_url = url_ret.scheme + "://" + url_ret.netloc + "/psama/"
         self.url = url_ret.scheme + "://" + url_ret.netloc + url_ret.path
-        self.only_resource = None
+        self.resource_uuids = []
         if not self.url.endswith("/"):
             self.url = self.url + "/"
         self._token = token
@@ -145,9 +145,7 @@ class Connection:
                     return '["ERROR:", "    See message above."]'.encode()
             else:
                 ret = content.decode("utf-8")
-                temp = json.loads(ret)
-                if len(temp) == 1:
-                    self.only_resource = temp[0]
+                self.resource_uuids = json.loads(ret)
                 return content.decode("utf-8")
 
     def _api_obj(self):
