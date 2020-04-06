@@ -260,11 +260,13 @@ class PicSureConnectionAPI:
         else:
             return content.decode("utf-8")
 
-    def queryStatus(self, resource_uuid, query_uuid, query_body):
+    def queryStatus(self, resource_uuid, query_uuid, query_body = "{}"):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L124
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
         httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
         url = self.url_picsure + "query/" + query_uuid + "/status"
+
+        # We need to supply a fully formed query body so PSAMA can parse it.  The adapter should pass in an appropriate template.
         query_obj = json.loads(query_body)
         query = {"resourceUUID": resource_uuid, "query": query_obj, "resourceCredentials": {}}
         (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=json.dumps(query))
