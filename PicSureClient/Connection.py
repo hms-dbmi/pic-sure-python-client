@@ -32,7 +32,7 @@ class Client:
         
         kwargs = {"psama_override": 'http://wildfly:8080/pic-sure-auth-services/auth/'}
         
-        return PicSureClient.Connection('http://wildfly:8080/pic-sure-api-2/PICSURE/', token, allowSelfSignedSSL, kwargs)
+        return PicSureClient.Connection('http://wildfly:8080/pic-sure-api-2/PICSURE/', token, allowSelfSignedSSL, **kwargs)
   
 class Connection:
     def __init__(self, url, token, allowSelfSignedSSL = False, **kwargs):
