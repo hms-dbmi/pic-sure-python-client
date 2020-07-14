@@ -26,17 +26,34 @@ class Client:
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
         return PicSureClient.Connection(url, token, allowSelfSignedSSL)
 
+    @classmethod
+    def connect_local(self, url, token, allowSelfSignedSSL = False):
+        """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
+        psama_override = 'http://wildfly:8080/pic-sure-auth-services/auth/'
+        url_override = 'http://wildfly:8080/pic-sure-api-2/PICSURE/'
+        return PicSureClient.Connection(url, token, allowSelfSignedSSL, psama_override = psama_override, url_override = url_override)
+  
 class Connection:
-    def __init__(self, url, token, allowSelfSignedSSL = False):
+    def __init__(self, url, token, allowSelfSignedSSL = False, **kwargs):
         url_ret = urlparse(url)
         self.psama_url = url_ret.scheme + "://" + url_ret.netloc + "/psama/"
         self.url = url_ret.scheme + "://" + url_ret.netloc + url_ret.path
+        
+        if 'psama_override' in kwargs:
+            self.psama_url = kwargs.get('psama_override')
+        
+        if 'url_override' in kwargs:
+            self.url = kwargs.get('url_overrride')
+        
         self.resource_uuids = []
+        
         if not self.url.endswith("/"):
             self.url = self.url + "/"
+            
         self._token = token
 
         self.AllowSelfSigned = allowSelfSignedSSL
+        
         if allowSelfSignedSSL is True:
             # user is allowing self-signed SSL certs, serve them a black box warning
             print("""\033[38;5;91;40m\n
