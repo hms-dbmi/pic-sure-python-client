@@ -27,11 +27,12 @@ class Client:
         return PicSureClient.Connection(url, token, allowSelfSignedSSL)
 
     @classmethod
-    def connect_local(self, url, token, allowSelfSignedSSL = False):
+    def connect_local(self, token, allowSelfSignedSSL = False):
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
-        psama_override = 'http://wildfly:8080/pic-sure-auth-services/auth/'
-        url_override = 'http://wildfly:8080/pic-sure-api-2/PICSURE/'
-        return PicSureClient.Connection(url, token, allowSelfSignedSSL, psama_override = psama_override, url_override = url_override)
+        
+        kwargs = {"psama_override": 'http://wildfly:8080/pic-sure-auth-services/auth/', "url_override": 'http://wildfly:8080/pic-sure-api-2/PICSURE/'}
+        
+        return PicSureClient.Connection(url, token, allowSelfSignedSSL, kwargs)
   
 class Connection:
     def __init__(self, url, token, allowSelfSignedSSL = False, **kwargs):
