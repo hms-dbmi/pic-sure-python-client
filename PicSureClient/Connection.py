@@ -19,13 +19,18 @@ class Client:
         [HELP] PicSureClient.Client()
             .version()                                                 gives version information for library
             .connect(<url>, <token> [, allowSelfSignedSSL = True])     returns a connection object
+            .connect_local(<token>)                                   return a connection object from all-in-one stack
         """)
 
     @classmethod
     def connect(self, url, token, allowSelfSignedSSL = False):
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
         return PicSureClient.Connection(url, token, allowSelfSignedSSL)
-
+    
+    ####
+    ## Use kwargs to override some initializations in Connection class
+    ## adding kwargs to the connection class will not break any existing notebooks
+    ####
     @classmethod
     def connect_local(self, token, allowSelfSignedSSL = False):
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
