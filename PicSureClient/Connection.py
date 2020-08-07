@@ -302,6 +302,22 @@ class PicSureConnectionAPI:
         else:
             return content.decode("utf-8")
 
+    #This operation is handled entirely in PIC-SURE, and does not need a resource connection
+    def queryMetadata(self, query_uuid):
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
+        url = self.url_picsure + "query/" + query_uuid + "/metadata"
+
+        (resp_headers, content) = httpConn.request(uri=url, method="GET", headers=httpHeaders)
+        if resp_headers["status"] != "200":
+            print("ERROR: HTTP response was bad")
+            print(url)
+            print(resp_headers)
+            print(content.decode('utf-8'))
+            return '{"results":{}, "error":"true"}'
+        else:
+            return content.decode("utf-8")
+
     def queryResult(self, resource_uuid, query_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L155
         httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
