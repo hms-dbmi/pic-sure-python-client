@@ -26,7 +26,7 @@ class Client:
     def connect(self, url, token, allowSelfSignedSSL = False):
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
         return PicSureClient.Connection(url, token, allowSelfSignedSSL)
-    
+
     ####
     ## Use kwargs to override some initializations in Connection class
     ## adding kwargs to the connection class will not break any existing notebooks
@@ -34,32 +34,32 @@ class Client:
     @classmethod
     def connect_local(self, token, allowSelfSignedSSL = False):
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
-        
+
         kwargs = {"psama_override": 'http://wildfly:8080/pic-sure-auth-services/auth/'}
-        
+
         return PicSureClient.Connection('http://wildfly:8080/pic-sure-api-2/PICSURE/', token, allowSelfSignedSSL, **kwargs)
-  
+
 class Connection:
     def __init__(self, url, token, allowSelfSignedSSL = False, **kwargs):
         url_ret = urlparse(url)
         self.psama_url = url_ret.scheme + "://" + url_ret.netloc + "/psama/"
         self.url = url_ret.scheme + "://" + url_ret.netloc + url_ret.path
-        
+
         if 'psama_override' in kwargs:
             self.psama_url = kwargs.get('psama_override')
-        
+
         if 'url_override' in kwargs:
             self.url = kwargs.get('url_overrride')
-        
+
         self.resource_uuids = []
-        
+
         if not self.url.endswith("/"):
             self.url = self.url + "/"
-            
+
         self._token = token
 
         self.AllowSelfSigned = allowSelfSignedSSL
-        
+
         if allowSelfSignedSSL is True:
             # user is allowing self-signed SSL certs, serve them a black box warning
             print("""\033[38;5;91;40m\n
@@ -175,6 +175,11 @@ class Connection:
         """PicSureClient._api_obj() function returns a new, preconfigured PicSureConnectionAPI class instance """
         return PicSureConnectionAPI(self.url, self.psama_url, self._token, allowSelfSignedSSL = self.AllowSelfSigned)
 
+class PicSureClientException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return "Error: %s" % self.value
 
 class PicSureConnectionAPI:
     def __init__(self, url_picsure, url_psama, token, allowSelfSignedSSL = False):
@@ -263,7 +268,7 @@ class PicSureConnectionAPI:
             print(url)
             print(resp_headers)
             print(content.decode('utf-8'))
-            return '{"results":{}, "error":"true"}'
+            raise PicSureClientException('An error has occurred with the server')
         else:
             return content.decode("utf-8")
 
@@ -279,7 +284,7 @@ class PicSureConnectionAPI:
             print(url)
             print(resp_headers)
             print(content.decode('utf-8'))
-            return '{"results":{}, "error":"true"}'
+            raise PicSureClientException('An error has occurred with the server')
         else:
             return content.decode("utf-8")
 
