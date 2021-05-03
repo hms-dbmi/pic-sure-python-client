@@ -119,12 +119,15 @@ class Connection:
 
     def list(self):
         listing = json.loads(self.getResources())
-        print("+".ljust(39, '-') + '+'.ljust(55, '-'))
-        print("|  Resource UUID".ljust(39, ' ') + '|  Resource Name'.ljust(50, ' '))
-        print("+".ljust(39, '-') + '+'.ljust(55, '-'))
+        print("+".ljust(39, '-') + '+'.ljust(55, '-') + "+")
+        print("|  Resource UUID".ljust(39, ' ') + '|  Resource Name'.ljust(55, ' ') + "|")
+        print("+".ljust(39, '-') + '+'.ljust(55, '-') + "+")
         for rec in listing:
-            print('| ' + rec.ljust(35,' '))
-        print("+".ljust(39, '-') + '+'.ljust(55, '-'))
+            if type(listing) == list:
+                print('| ' + rec.ljust(36, ' ') + " | " + "".ljust(53) + "|")
+            else:
+                print('| ' + rec.ljust(36, ' ') + " | " + listing[rec].ljust(53) + "|")
+        print("+".ljust(39, '-') + '+'.ljust(55, '-') + "+")
 
     def getInfo(self, uuid):
         url = self.url + "info/" + str(uuid)
@@ -169,6 +172,8 @@ class Connection:
             else:
                 ret = content.decode("utf-8")
                 self.resource_uuids = json.loads(ret)
+                if type(self.resource_uuids) == dict:
+                    self.resource_uuids = list(self.resource_uuids.keys())
                 return content.decode("utf-8")
 
     def _api_obj(self):
