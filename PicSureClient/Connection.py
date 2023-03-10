@@ -60,6 +60,8 @@ class Connection:
 
         self.AllowSelfSigned = allowSelfSignedSSL
 
+        self.check_hostname = not allowSelfSignedSSL
+
         if allowSelfSignedSSL is True:
             # user is allowing self-signed SSL certs, serve them a black box warning
             print("""\033[38;5;91;40m\n
@@ -132,7 +134,7 @@ class Connection:
     def getInfo(self, uuid):
         url = self.url + "info/" + str(uuid)
 
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body="{}")
         if resp_headers["status"] != "200":
@@ -146,7 +148,7 @@ class Connection:
     def getResources(self):
         import socket, httplib2
         """PicSureClient.resources() function is used to list all resources on the connected endpoint"""
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         url = self.url + "info/resources"
         try:
@@ -178,7 +180,7 @@ class Connection:
 
     def _api_obj(self):
         """PicSureClient._api_obj() function returns a new, preconfigured PicSureConnectionAPI class instance """
-        return PicSureConnectionAPI(self.url, self.psama_url, self._token, allowSelfSignedSSL = self.AllowSelfSigned)
+        return PicSureConnectionAPI(self.url, self.psama_url, self._token, allowSelfSignedSSL = self.AllowSelfSigned, check_hostname = self.check_hostname)
 
 class PicSureClientException(Exception):
     def __init__(self, value):
@@ -187,16 +189,18 @@ class PicSureClientException(Exception):
         return "Error: %s" % self.value
 
 class PicSureConnectionAPI:
-    def __init__(self, url_picsure, url_psama, token, allowSelfSignedSSL = False):
+    def __init__(self, url_picsure, url_psama, token, allowSelfSignedSSL = False, check_hostname = True):
+
         # save values
         self.url_picsure = url_picsure
         self.url_psama = url_psama
         self._token = token
         self.AllowSelfSigned = allowSelfSignedSSL
+        self.check_hostname = check_hostname
 
     def profile(self):
         from urllib.parse import urlparse
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         (resp_headers, content) = httpConn.request(uri=self.url_psama + "user/me", method="GET", headers=httpHeaders)
         if resp_headers["status"] != "200":
@@ -227,7 +231,7 @@ class PicSureConnectionAPI:
 
     def info(self, resource_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L43
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         url = self.url_picsure + "info/" + resource_uuid
         (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body="{}")
@@ -244,7 +248,7 @@ class PicSureConnectionAPI:
     def search(self, resource_uuid, query=None):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L69
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         if query == None:
             bodystr = json.dumps({"query":""})
@@ -264,7 +268,7 @@ class PicSureConnectionAPI:
     def asyncQuery(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L98
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
         url = self.url_picsure + "query"
         (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query)
@@ -280,7 +284,7 @@ class PicSureConnectionAPI:
     def syncQuery(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L186
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
         url = self.url_picsure + "query/sync"
         (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query)
@@ -295,7 +299,7 @@ class PicSureConnectionAPI:
 
     def queryStatus(self, resource_uuid, query_uuid, query_body = "{}"):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L124
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
         url = self.url_picsure + "query/" + query_uuid + "/status"
 
@@ -314,7 +318,7 @@ class PicSureConnectionAPI:
 
     #This operation is handled entirely in PIC-SURE, and does not need a resource connection
     def queryMetadata(self, query_uuid):
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
         url = self.url_picsure + "query/" + query_uuid + "/metadata"
 
@@ -330,7 +334,7 @@ class PicSureConnectionAPI:
 
     def queryResult(self, resource_uuid, query_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L155
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
+        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned, check_hostname=self.check_hostname)
         httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
         httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
         url = self.url_picsure + "query/" + query_uuid + "/result"
