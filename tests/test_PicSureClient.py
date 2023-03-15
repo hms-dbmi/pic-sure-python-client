@@ -157,7 +157,7 @@ class TestConnection(unittest.TestCase):
 
     @patch('httplib2.Http.request')
     def test_connection_func_getResources(self, mock_http):
-        test_url = "http://some.url/PIC-SURE/"
+        test_url = "http://local.picsure/PIC-SURE/"
         test_token = "some_security_token"
 
         resp_headers = {"status": "200"}
@@ -165,7 +165,7 @@ class TestConnection(unittest.TestCase):
         json_content = json.dumps(resource_list)
         mock_http.return_value = (resp_headers, json_content.encode("utf-8"))
 
-        test_conn = PicSureClient.Connection(test_url, test_token)
+        test_conn = PicSureClient.Connection(test_url, test_token, allowSelfSignedSSL=False)
         test_list = test_conn.getResources()
         self.assertEqual(json_content, test_list)
         mock_http.assert_called_with(uri=test_url + "info/resources", headers={'Content-Type': 'application/json', 'Authorization':'Bearer '+test_token}, method="GET")
