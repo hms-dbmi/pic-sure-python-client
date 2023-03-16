@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 """PIC-SURE Connection and Authorization Library"""
-import certifi
 import urllib3
 
 import PicSureClient
@@ -265,13 +264,13 @@ class PicSureConnectionAPI:
 
 
 class PicSureHttpClient:
-    def __init__(self, url, token, allowSelfSigned, **kwargs):
+    def __init__(self, url, token, allowSelfSigned=False, **kwargs):
         self.url = url
         self.token = token
-        self.allow_self_signed = allowSelfSigned
-        if self.allow_self_signed:
-            urllib3.disable_warnings()
-            self.http = urllib3.PoolManager(cert_reqs='CERT_NONE', ca_certs=certifi.where(), assert_hostname=False)
+        self.allowSelfSigned = allowSelfSigned
+        if self.allowSelfSigned is True:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            self.http = urllib3.PoolManager(cert_reqs='CERT_NONE')
         else:
             self.http = urllib3.PoolManager()
 
@@ -300,10 +299,7 @@ class PicSureHttpClient:
             return self.handleResponse(response, url)
 
     def setHeaders(self, data):
-        headers = {'Authorization': 'Bearer ' + self.token, 'Content-Type': 'application/json'}
-        if self.allow_self_signed:
-            headers['verify'] = False
-        return headers
+        return {'Authorization': 'Bearer ' + self.token, 'Content-Type': 'application/json'}
 
     def handleResponse(self, response, url):
         if response.status != 200:
