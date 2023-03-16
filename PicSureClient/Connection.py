@@ -306,9 +306,8 @@ class PicSureHttpClient:
         return headers
 
     def handleResponse(self, response, url):
-        result = {"result": {}, "error": False}
         if response.status != 200:
-            result["error"] = True
+            result = {"result": {}, "error": True}
             if response.status == 401:
                 result["message"] = "Token invalid"
             elif response.status == 403:
