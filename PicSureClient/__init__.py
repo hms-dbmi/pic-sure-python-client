@@ -4,7 +4,7 @@
 
 __author__ = """Nick Benik"""
 __email__ = 'nick_benik@hms.harvard.edu'
-__version__ = '1.1.1'
+__version__ = '1.1.0'
 
 from .Connection import Client
 from .Connection import Connection
