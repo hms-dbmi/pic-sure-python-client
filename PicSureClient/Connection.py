@@ -292,13 +292,10 @@ class PicSureHttpClient:
         headers = self.setHeaders(data)
         try:
             response = self.http.request(method, url, fields=params, body=data, headers=headers)
-        except urllib3.exceptions.NewConnectionError as e:
+        except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.SSLError,
+                urllib3.exceptions.MaxRetryError) as e:
             print('ERROR: The address "' + url + '" is invalid')
-            return '["ERROR:", "   Invalid URL!"]'.encode()
-        except urllib3.exceptions.SSLError as e:
-            print(
-                'ERROR: The address "' + url + '" is invalid or you may not be using a certificate signed by a trusted CA')
-            return '["ERROR:", "   Invalid URL!"]'.encode()
+            return '["ERROR:", "   Invalid URL!"]'
         else:
             return self.handleResponse(response, url)
 
