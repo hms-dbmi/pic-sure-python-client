@@ -192,6 +192,10 @@ class PicSureConnectionAPI:
     def profile(self):
         response_str = self.psamaHttpConnect.get("user/me")
 
+        if hasattr(response_str, 'error') and response_str.error:
+            print("ERROR: HTTP response was bad requesting PSAMA profile")
+            return '{"results":{}, "error":"true"}'
+
         # Make sure we have a "queryTemplate"
         response_objs = json.loads(response_str)
         if "queryTemplate" not in response_objs:
