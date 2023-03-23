@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 """PIC-SURE Connection and Authorization Library"""
+import urllib3
 
 import PicSureClient
-import httplib2
 import json
 from urllib.parse import urlparse
-import sys
+
 
 class Client:
     @classmethod
@@ -23,7 +23,7 @@ class Client:
         """)
 
     @classmethod
-    def connect(self, url, token, allowSelfSignedSSL = False):
+    def connect(self, url, token, allowSelfSignedSSL=False):
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
         return PicSureClient.Connection(url, token, allowSelfSignedSSL)
 
@@ -32,15 +32,17 @@ class Client:
     ## adding kwargs to the connection class will not break any existing notebooks
     ####
     @classmethod
-    def connect_local(self, token, allowSelfSignedSSL = False):
+    def connect_local(self, token, allowSelfSignedSSL=False):
         """ PicSure.connect returns a configured instance of a PicSureClient.Connection class """
 
         kwargs = {"psama_override": 'http://wildfly:8080/pic-sure-auth-services/auth/'}
 
-        return PicSureClient.Connection('http://wildfly:8080/pic-sure-api-2/PICSURE/', token, allowSelfSignedSSL, **kwargs)
+        return PicSureClient.Connection('http://wildfly:8080/pic-sure-api-2/PICSURE/', token, allowSelfSignedSSL,
+                                        **kwargs)
+
 
 class Connection:
-    def __init__(self, url, token, allowSelfSignedSSL = False, **kwargs):
+    def __init__(self, url, token, allowSelfSignedSSL=False, **kwargs):
         url_ret = urlparse(url)
         self.psama_url = url_ret.scheme + "://" + url_ret.netloc + "/psama/"
         self.url = url_ret.scheme + "://" + url_ret.netloc + url_ret.path
@@ -60,6 +62,8 @@ class Connection:
 
         self.AllowSelfSigned = allowSelfSignedSSL
 
+        self.httpConn = PicSureHttpClient(url=self.url, token=self._token, allowSelfSigned=self.AllowSelfSigned)
+
         if allowSelfSignedSSL is True:
             # user is allowing self-signed SSL certs, serve them a black box warning
             print("""\033[38;5;91;40m\n
@@ -74,7 +78,6 @@ class Connection:
 
         # test server connection and automatically list all the Resource UUIDs
         self.list()
-
 
     def help(self):
         print("""
@@ -105,10 +108,8 @@ class Connection:
         """)
 
     def about(self, resourceId):
-        # print out info from /info about the endpoint
-        # TODO: finish this
         results = self.getInfo(resourceId)
-        print(str("---[ Info about "+resourceId+" ]").ljust(94, '-'))
+        print(str("---[ Info about " + resourceId + " ]").ljust(94, '-'))
         if type(results) is str:
             info = json.loads(results)
             print(json.dumps(info, indent=2))
@@ -116,232 +117,212 @@ class Connection:
             print("!!!! ERROR !!!!")
             print(json.dumps(results, indent=2))
 
-
     def list(self):
         listing = json.loads(self.getResources())
-        print("+".ljust(39, '-') + '+'.ljust(55, '-') + "+")
-        print("|  Resource UUID".ljust(39, ' ') + '|  Resource Name'.ljust(55, ' ') + "|")
-        print("+".ljust(39, '-') + '+'.ljust(55, '-') + "+")
-        for rec in listing:
-            if type(listing) == list:
-                print('| ' + rec.ljust(36, ' ') + " | " + "".ljust(53) + "|")
-            else:
-                print('| ' + rec.ljust(36, ' ') + " | " + listing[rec].ljust(53) + "|")
-        print("+".ljust(39, '-') + '+'.ljust(55, '-') + "+")
+        try:
+            print("+".ljust(39, '-') + '+'.ljust(55, '-') + "+")
+            print("|  Resource UUID".ljust(39, ' ') + '|  Resource Name'.ljust(55, ' ') + "|")
+            print("+".ljust(39, '-') + '+'.ljust(55, '-') + "+")
+            for rec in listing:
+                if type(listing) == list:
+                    print('| ' + rec.ljust(36, ' ') + " | " + "".ljust(53) + "|")
+                else:
+                    print('| ' + rec.ljust(36, ' ') + " | " + listing[rec].ljust(53) + "|")
+            print("+".ljust(39, '-') + '+'.ljust(55, '-') + "+")
+        except:
+            print("!!!! ERROR !!!!")
+            print(json.dumps(listing, indent=2))
 
     def getInfo(self, uuid):
-        url = self.url + "info/" + str(uuid)
-
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body="{}")
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(resp_headers)
-            print(content.decode("utf-8"))
-            return {"error":True, "headers":resp_headers, "content":json.loads(content.decode("utf-8"))}
-        else:
-            return content.decode('utf-8')
+        content = self.httpConn.post("info/" + str(uuid))
+        if hasattr(content, 'error') and content.error is True:
+            return {"error": True, "headers": content.headers, "content": json.loads(content)}
+        return content
 
     def getResources(self):
-        import socket, httplib2
         """PicSureClient.resources() function is used to list all resources on the connected endpoint"""
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        url = self.url + "info/resources"
-        try:
-            (resp_headers, content) = httpConn.request(uri=url, method="GET", headers=httpHeaders)
-        except (socket.gaierror, httplib2.ServerNotFoundError):
-            print('ERROR: The address "'+url+'" is invalid')
-            return '["ERROR:", "   Invalid URL!"]'.encode()
-        else:
-            if resp_headers["status"] != "200":
-                if resp_headers["status"] == "401":
+        content = self.httpConn.get("info/resources")
+        if 'error' in content:
+            if content['error'] is True:
+                if 'status' in content and content['status'] == 401:
+                    # If the response is an error, it is likely a 400 error. We need to return the response as part of the error
                     ret = ["ERROR:"]
-                    json_resp = json.loads(content.decode("utf-8"))
-                    if "message" in json_resp:
-                        ret.append("    "+json_resp["message"])
+                    if "message" in content:
+                        ret.append("    " + content["message"])
                     else:
                         ret.append("    See message above.")
                     return json.dumps(ret).encode()
                 else:
-                    print("ERROR: HTTP response was bad")
-                    print(resp_headers)
-                    print(content.decode("utf-8"))
                     return '["ERROR:", "    See message above."]'.encode()
-            else:
-                ret = content.decode("utf-8")
-                self.resource_uuids = json.loads(ret)
-                if type(self.resource_uuids) == dict:
-                    self.resource_uuids = list(self.resource_uuids.keys())
-                return content.decode("utf-8")
+        else:
+            self.resource_uuids = json.dumps(content)
+            if type(self.resource_uuids) == dict:
+                self.resource_uuids = list(self.resource_uuids.keys())
+
+            # We need to return a string, not a dict
+            if type(content) == dict:
+                return json.dumps(content)
+
+            return content
 
     def _api_obj(self):
         """PicSureClient._api_obj() function returns a new, preconfigured PicSureConnectionAPI class instance """
-        return PicSureConnectionAPI(self.url, self.psama_url, self._token, allowSelfSignedSSL = self.AllowSelfSigned)
+        return PicSureConnectionAPI(self.url, self.psama_url, self._token, allowSelfSignedSSL=self.AllowSelfSigned)
+
 
 class PicSureClientException(Exception):
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return "Error: %s" % self.value
 
+
 class PicSureConnectionAPI:
-    def __init__(self, url_picsure, url_psama, token, allowSelfSignedSSL = False):
+    def __init__(self, url_picsure, url_psama, token, allowSelfSignedSSL=False):
+
         # save values
         self.url_picsure = url_picsure
         self.url_psama = url_psama
         self._token = token
         self.AllowSelfSigned = allowSelfSignedSSL
+        self.psamaHttpConnect = PicSureHttpClient(self.url_psama, self._token, self.AllowSelfSigned)
+        self.picsureHttpConnect = PicSureHttpClient(self.url_picsure, self._token, self.AllowSelfSigned)
 
     def profile(self):
-        from urllib.parse import urlparse
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        (resp_headers, content) = httpConn.request(uri=self.url_psama + "user/me", method="GET", headers=httpHeaders)
-        if resp_headers["status"] != "200":
+        response_str = self.psamaHttpConnect.get("user/me")
+
+        if hasattr(response_str, 'error') and response_str.error:
             print("ERROR: HTTP response was bad requesting PSAMA profile")
-            print(self.url_psama + "user/me")
-            print(resp_headers)
-            print(content.decode("utf-8"))
             return '{"results":{}, "error":"true"}'
-        else:
-            response_str = content.decode("utf-8")
 
-            # Make sure we have a "queryTemplate"
-            response_objs = json.loads(response_str)
-            if "queryTemplate" not in response_objs:
-                    #load the query template
-                    temp_url = self.url_psama + "user/me/queryTemplate/"
-                    (resp_headers, content) = httpConn.request(uri=temp_url, method="GET", headers=httpHeaders)
-                    if resp_headers["status"] != "200":
-                        print("ERROR: HTTP response was bad requesting application queryTemplate")
-                        print(temp_url)
-                        print(resp_headers)
-                        print(content.decode("utf-8"))
-                        return '{"results":{}, "error":"true"}'
-                    else:
-                        response_objs["queryTemplate"] = json.loads(content.decode("utf-8"))["queryTemplate"]
-
-            return json.dumps(response_objs)
+        # Make sure we have a "queryTemplate"
+        response_objs = json.loads(response_str)
+        if "queryTemplate" not in response_objs:
+            # load the query template
+            content = self.psamaHttpConnect.get("user/me/queryTemplate/")
+            if hasattr(content, 'error') and content.error:
+                print("ERROR: HTTP response was bad requesting application queryTemplate")
+                return '{"results":{}, "error":"true"}'
+            else:
+                response_objs["queryTemplate"] = json.loads(content)["queryTemplate"]
+        return json.dumps(response_objs)
 
     def info(self, resource_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L43
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        url = self.url_picsure + "info/" + resource_uuid
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body="{}")
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode("utf-8"))
-            return '{"results":{}, "error":"true"}'
-        else:
-            return content.decode("utf-8")
-
+        content = self.picsureHttpConnect.post("info/" + resource_uuid, data='{}')
+        if hasattr(content, 'error') and content.error:
+            return json.dumps(content)
+        return content
 
     def search(self, resource_uuid, query=None):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L69
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        if query == None:
-            bodystr = json.dumps({"query":""})
-        else:
-            bodystr = str(query)
-        url = self.url_picsure + "search/" + resource_uuid
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=bodystr)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode("utf-8"))
-            return '{"results":{}, "error":"true"}'
-        else:
-            return content.decode("utf-8")
+        bodystr = json.dumps({"query": ""}) if query is None else str(query)
+        content = self.picsureHttpConnect.post("search/" + resource_uuid, data=bodystr)
+        if hasattr(content, 'error') and content.error:
+            return json.dumps(content)
+        return content
 
     def asyncQuery(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L98
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
-        url = self.url_picsure + "query"
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode('utf-8'))
+        content = self.picsureHttpConnect.post("query", data=query)
+        if hasattr(content, 'error') and content.error:
             raise PicSureClientException('An error has occurred with the server')
-        else:
-            return content.decode("utf-8")
+        return content
 
     def syncQuery(self, resource_uuid, query):
         # make sure a Resource UUID is passed via the body of these commands
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L186
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type':'application/json', 'Authorization':'Bearer '+self._token}
-        url = self.url_picsure + "query/sync"
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode('utf-8'))
-            raise PicSureClientException('An error has occurred with the server')
-        else:
-            return content.decode("utf-8")
+        content = self.picsureHttpConnect.post("query/sync", data=query)
+        if hasattr(content, 'error') and content.error:
+            return json.dumps(content)
+        return content
 
-    def queryStatus(self, resource_uuid, query_uuid, query_body = "{}"):
-        # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L124
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
-        url = self.url_picsure + "query/" + query_uuid + "/status"
-
-        # We need to supply a fully formed query body so PSAMA can parse it.  The adapter should pass in an appropriate template.
+    def queryStatus(self, resource_uuid, query_uuid, query_body="{}"):
+        # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu
+        # /harvard/dbmi/avillach/service/ResourceWebClient.java#L124 We need to supply a fully formed query body so
+        # PSAMA can parse it.  The adapter should pass in an appropriate template.
         query_obj = json.loads(query_body)
         query = {"resourceUUID": resource_uuid, "query": query_obj, "resourceCredentials": {}}
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=json.dumps(query))
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode('utf-8'))
-            return '{"results":{}, "error":"true"}'
-        else:
-            return content.decode("utf-8")
+        content = self.picsureHttpConnect.post("query/" + query_uuid + "/status", data=json.dumps(query))
+        if hasattr(content, 'error') and content.error:
+            return json.dumps(content)
+        return content
 
-    #This operation is handled entirely in PIC-SURE, and does not need a resource connection
+    # This operation is handled entirely in PIC-SURE, and does not need a resource connection
     def queryMetadata(self, query_uuid):
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
-        url = self.url_picsure + "query/" + query_uuid + "/metadata"
-
-        (resp_headers, content) = httpConn.request(uri=url, method="GET", headers=httpHeaders)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode('utf-8'))
-            return '{"results":{}, "error":"true"}'
-        else:
-            return content.decode("utf-8")
+        content = self.psamaHttpConnect.get("query/" + query_uuid + "/metadata")
+        if hasattr(content, 'error') and content.error:
+            return json.dumps(content)
+        return content
 
     def queryResult(self, resource_uuid, query_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L155
-        httpConn = httplib2.Http(disable_ssl_certificate_validation=self.AllowSelfSigned)
-        httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
-        httpHeaders = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self._token}
-        url = self.url_picsure + "query/" + query_uuid + "/result"
-        pass
         query = '{}'
-        (resp_headers, content) = httpConn.request(uri=url, method="POST", headers=httpHeaders, body=query)
-        if resp_headers["status"] != "200":
-            print("ERROR: HTTP response was bad")
-            print(url)
-            print(resp_headers)
-            print(content.decode('utf-8'))
-            return '{"results":{}, "error":"true"}'
+        content = self.picsureHttpConnect.post("query/" + query_uuid + "/result", data=query)
+        if hasattr(content, 'error') and content.error:
+            return json.dumps(content)
+        return content
+
+
+class PicSureHttpClient:
+    def __init__(self, url, token, allowSelfSigned=False, **kwargs):
+        self.url = url
+        self.token = token
+        self.allowSelfSigned = allowSelfSigned
+        if self.allowSelfSigned is True:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            self.http = urllib3.PoolManager(cert_reqs='CERT_NONE')
         else:
-            return content.decode("utf-8")
+            self.http = urllib3.PoolManager()
+
+    def get(self, path, params=None):
+        return self._request('GET', path, params)
+
+    def post(self, path, params=None, data=None):
+        return self._request('POST', path, params, data)
+
+    def put(self, path, params=None, data=None):
+        return self._request('PUT', path, params, data)
+
+    def delete(self, path, params=None):
+        return self._request('DELETE', path, params)
+
+    def _request(self, method, path, params=None, data=None):
+        url = self.url + path
+        headers = self.setHeaders(data)
+        try:
+            response = self.http.request(method, url, fields=params, body=data, headers=headers)
+        except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.SSLError,
+                urllib3.exceptions.MaxRetryError) as e:
+            print('ERROR: The address "' + url + '" is invalid')
+            return '["ERROR:", "   Invalid URL!"]'
+        else:
+            return self.handleResponse(response, url)
+
+    def setHeaders(self, data):
+        return {'Authorization': 'Bearer ' + self.token, 'Content-Type': 'application/json'}
+
+    def handleResponse(self, response, url):
+        if response.status != 200:
+            result = {"result": {}, "error": True}
+            if response.status == 401:
+                result["message"] = "Token invalid"
+            elif response.status == 403:
+                result["message"] = "Forbidden"
+            elif response.status == 404:
+                result["message"] = "Invalid URL"
+
+            result["status"] = response.status
+
+            # These error messages are used in unit tests, so don't change them without updating the tests.
+            print("ERROR: " + (result["message"] if "message" in result else ""))
+            print(url)
+            print(response.status)
+            print(response.headers)
+
+            return result
+        else:
+            return response.data.decode('utf-8')
