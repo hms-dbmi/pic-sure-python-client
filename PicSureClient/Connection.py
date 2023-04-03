@@ -252,16 +252,16 @@ class PicSureConnectionAPI:
         return content
 
     # This operation is handled entirely in PIC-SURE, and does not need a resource connection
-    def queryMetadata(self, query_uuid):
-        content = self.psamaHttpConnect.get("query/" + query_uuid + "/metadata")
+    def queryMetadata(self, query_uuid, resource_uuid):
+        query = {"resourceUUID": resource_uuid, "resourceCredentials": {"BEARER_TOKEN": self._token}}
+        content = self.picsureHttpConnect.get("query/" + query_uuid + "/metadata", data=json.dumps(query))
         if hasattr(content, 'error') and content.error:
             return json.dumps(content)
         return content
 
     def queryResult(self, resource_uuid, query_uuid):
         # https://github.com/hms-dbmi/pic-sure/blob/master/pic-sure-resources/pic-sure-resource-api/src/main/java/edu/harvard/dbmi/avillach/service/ResourceWebClient.java#L155
-        query = '{}'
-        content = self.picsureHttpConnect.post("query/" + query_uuid + "/result", data=query)
+        content = self.picsureHttpConnect.post("query/" + query_uuid + "/result", data='{}')
         if hasattr(content, 'error') and content.error:
             return json.dumps(content)
         return content
@@ -278,8 +278,8 @@ class PicSureHttpClient:
         else:
             self.http = urllib3.PoolManager()
 
-    def get(self, path, params=None):
-        return self._request('GET', path, params)
+    def get(self, path, params=None, data=None):
+        return self._request('GET', path, params, data)
 
     def post(self, path, params=None, data=None):
         return self._request('POST', path, params, data)
@@ -292,7 +292,7 @@ class PicSureHttpClient:
 
     def _request(self, method, path, params=None, data=None):
         url = self.url + path
-        headers = self.setHeaders(data)
+        headers = self.setHeaders()
         try:
             response = self.http.request(method, url, fields=params, body=data, headers=headers)
         except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.SSLError,
@@ -302,7 +302,7 @@ class PicSureHttpClient:
         else:
             return self.handleResponse(response, url)
 
-    def setHeaders(self, data):
+    def setHeaders(self):
         return {'Authorization': 'Bearer ' + self.token, 'Content-Type': 'application/json'}
 
     def handleResponse(self, response, url):
