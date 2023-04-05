@@ -277,8 +277,8 @@ class PicSureHttpClient:
         else:
             self.http = urllib3.PoolManager()
 
-    def get(self, path, params=None, data=None):
-        return self._request('GET', path, params, data)
+    def get(self, path, params=None):
+        return self._request('GET', path, params)
 
     def post(self, path, params=None, data=None):
         return self._request('POST', path, params, data)
