@@ -252,9 +252,8 @@ class PicSureConnectionAPI:
         return content
 
     # This operation is handled entirely in PIC-SURE, and does not need a resource connection
-    def queryMetadata(self, query_uuid, resource_uuid):
-        query = {"resourceUUID": resource_uuid, "resourceCredentials": {"BEARER_TOKEN": self._token}}
-        content = self.picsureHttpConnect.get("query/" + query_uuid + "/metadata", data=json.dumps(query))
+    def queryMetadata(self, query_uuid):
+        content = self.picsureHttpConnect.get("query/" + query_uuid + "/metadata", data=json.dumps({}))
         if hasattr(content, 'error') and content.error:
             return json.dumps(content)
         return content
