@@ -267,7 +267,7 @@ class PicSureConnectionAPI:
 
     def searchGenomicConceptValues(self, resource_uuid, genomicConceptPath, query):
         content = self.picsureHttpConnect.get("search/" + resource_uuid + "/values/", {'genomicConceptPath': genomicConceptPath, 'query': query, 'page': 1, 'size': 10000})
-        return json.dumps(content)
+        return json.loads(content)
 
 
 class PicSureHttpClient:
